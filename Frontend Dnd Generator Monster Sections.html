@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D&D Generator</title>
+    <style>
+        /* Body Styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #212121;
+            color: #F0E68C;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to the top of the screen */
+            min-height: 100vh; /* Ensure the body takes up at least full height */
+            background-image: url('https://www.transparenttextures.com/patterns/dark-mosaic.png');
+            background-size: cover;
+            overflow: auto; /* Allow scrolling if the content is larger than the screen */
+        }
+    
+        /* Container */
+        .container {
+            background-color: #2F4F4F;
+            color: #FFDE00;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            width: 100%;
+            max-width: 700px;
+            text-align: center;
+            margin-top: 20px; /* Add a small margin to ensure content isn't too close to the top */
+        }
+    
+        h1 {
+            font-size: 2.5rem;
+            color: #FFDE00;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 5px rgba(0, 0, 0, 0.7);
+        }
+            
+        /* Form Elements */
+        label, select, input, button {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            display: block;
+            width: 100%;  /* Ensures all form elements are the same width */
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 10px;
+        }
+        
+        select {
+            background-color: #444;
+            color: #FFDE00;
+            border: 2px solid #FFDE00;
+            outline: none;
+            font-size: 1rem;
+        }
+        
+        select:focus {
+            border-color: #FFD700;
+        }
+    
+        input[type="text"], input[type="number"], select {
+            background-color: #444;
+            color: #FFDE00;
+            border: 2px solid #FFDE00;
+            outline: none;
+            font-size: 1rem;
+        }
+    
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            border-color: #FFD700;
+        }
+    
+        button {
+            background-color: #007BFF;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            transition: background-color 0.3s ease;
+            padding: 15px;
+        }
+    
+        button:hover {
+            background-color: #0056b3;
+        }
+    
+        /* Result Section */
+        .result {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+    
+        /* Monster Styling */
+        .monster {
+            background-color: #444;
+            color: #FFD700;
+            border: 1px solid #FFDE00;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            padding: 15px;
+            transition: transform 0.3s ease-in-out;
+        }
+    
+        .monster:hover {
+            transform: scale(1.05);
+        }
+    
+        .monster h4 {
+            font-size: 1.6rem;
+            margin: 10px 0;
+        }
+    
+        .monster ul {
+            list-style-type: none;
+            padding: 0;
+        }
+    
+        .monster ul li {
+            font-size: 1rem;
+            margin: 5px 0;
+        }
+    
+        /* Loot Section Styling */
+        .loot {
+            background-color: #4B0082;
+            color: #FFD700;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 1.2rem;
+        }
+    
+        /* Loading Indicator */
+        #loading {
+            color: #FF6347;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: none;
+        }
+    
+    </style>    
+</head>
+<body>
+    <div class="container">
+        <h1>D&D Setting Generator</h1>
+        <form id="generatorForm">
+            <label for="settingType">Setting Type:</label>
+            <input type="text" id="settingType" name="settingType" placeholder="e.g., forest" required>
+            
+            <label for="difficultyLevel">Difficulty Level:</label>
+            <select id="difficultyLevel" name="difficultyLevel">
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+
+            <label for="numberOfMonsters">Number of Monsters:</label>
+            <input type="number" id="numberOfMonsters" name="numberOfMonsters" value="3" min="1" max="10" required>
+
+            <!-- New Area Level input -->
+            <label for="areaLevel">Area Level (1-15):</label>
+            <input type="number" id="areaLevel" name="areaLevel" value="1" min="1" max="15" required>
+
+            <button type="button" onclick="generateContent()">Generate</button>
+        </form>
+
+        <div id="loading">Loading...</div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        async function generateContent() {
+            const settingType = document.getElementById('settingType').value;
+            const difficultyLevel = document.getElementById('difficultyLevel').value;
+            const numberOfMonsters = document.getElementById('numberOfMonsters').value;
+            const areaLevel = document.getElementById('areaLevel').value;  // New field for area level
+    
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+    
+            // Show loading indicator
+            loadingDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+            resultDiv.innerHTML = '';
+    
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        setting_type: settingType,
+                        difficulty_level: difficultyLevel,
+                        number_of_monsters: parseInt(numberOfMonsters),
+                        area_level: parseInt(areaLevel)  
+                    })
+                });
+    
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Unknown error occurred');
+                }
+    
+                const data = await response.json();
+                console.log('Parsed Response Data:', data);
+    
+                // Hide loading and show results
+                loadingDiv.style.display = 'none';
+                resultDiv.style.display = 'block';
+    
+                const monstersHtml = data.monsters && data.monsters.length > 0
+                    ? data.monsters.map((monster) => ` 
+                        <div class='monster'>
+                            <h4>${monster.name}</h4>
+                            <p><strong>Stats:</strong></p>
+                            <ul>
+                                ${Object.entries(monster.stats).map(([key, value]) => `<li>${key}: ${value}</li>`).join('')}
+                            </ul>
+                            <p><strong>Abilities:</strong></p>
+                            <ul>
+                                ${monster.abilities.map(ability => `<li>${ability}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `).join('')
+                    : "<p>No monsters generated.</p>";
+    
+                const lootHtml = data.loot ? `<p>${data.loot}</p>` : "<p>No loot generated.</p>";
+    
+                resultDiv.innerHTML = `
+                    <h3>Generated Content:</h3>
+                    <h4>Setting Description:</h4>
+                    <p>${data.setting_description}</p>
+                    <h4>Monsters:</h4>
+                    ${monstersHtml}
+                    <h4>Loot:</h4>
+                    <div class="loot">${lootHtml}</div>
+                    <h4>Level:</h4>
+                    <p>Area Level: ${data.level}</p>
+                `;
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
